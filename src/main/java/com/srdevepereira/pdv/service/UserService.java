@@ -1,13 +1,15 @@
 package com.srdevepereira.pdv.service;
 
 import com.srdevepereira.pdv.dto.UserDTO;
+import com.srdevepereira.pdv.dto.UserResponseDTO;
 import com.srdevepereira.pdv.entity.User;
 import com.srdevepereira.pdv.exception.NoItemException;
 import com.srdevepereira.pdv.repository.UserRepository;
+import com.srdevepereira.pdv.security.SecurityConfig;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.ModelMap;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -20,18 +22,16 @@ public class UserService {
     private UserRepository userRepository;
     private ModelMapper mapper = new ModelMapper();
 
-    public List<UserDTO> findAll(){
+    public List<UserResponseDTO> findAll(){
         return userRepository.findAll().stream().map(user ->
-                new UserDTO(user.getId(), user.getName(), user.getUsername(), user.getPassword(),
-                        user.isEnabled())).collect(Collectors.toList());
+                new UserResponseDTO(user.getId(), user.getName(), user.getUsername(), user.isEnabled()))
+                .collect(Collectors.toList());
     }
 
     public UserDTO save(UserDTO user){
+        user.setPassword(SecurityConfig.passwordEncoder().encode(user.getPassword()));
+
         User userToSave = mapper.map(user, User.class);
-//        User userToSave = new User();
-//        userToSave.setEnabled(user.isEnabled());
-//        userToSave.setName(user.getName());
-//
         userRepository.save(userToSave);
         return new UserDTO(userToSave.getId(), userToSave.getName(), userToSave.getUsername(),
                 user.getPassword(), userToSave.isEnabled());
@@ -49,6 +49,9 @@ public class UserService {
     }
 
     public UserDTO update(UserDTO user){
+
+        user.setPassword(SecurityConfig.passwordEncoder().encode(user.getPassword()));
+
         User userToSave = mapper.map(user, User.class);
         Optional<User> userToEdit = userRepository.findById(userToSave.getId());
 
